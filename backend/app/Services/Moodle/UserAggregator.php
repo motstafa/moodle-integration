@@ -120,8 +120,8 @@ class UserAggregator
             'user' => [
                 'id'              => (int) $user['id'],
                 'username'        => $user['username'] ?? '',
-                'fullname'        => $user['fullname'],
-                'email'           => $user['email'],
+                'fullname'        => $user['fullname'] ?? '',
+                'email'           => $user['email'] ?? '',
                 'suspended'       => (bool) ($user['suspended'] ?? false),
                 'profileimageurl' => $user['profileimageurl'] ?? null,
                 'lastaccess'      => $user['lastaccess'] ?? null,

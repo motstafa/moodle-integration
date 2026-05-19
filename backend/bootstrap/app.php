@@ -32,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
                     'invalidtoken', 'serviceaccessexception', 'accessdenied' => 'MOODLE_PERMISSION_DENIED',
                     'invalidparameter'                                        => 'MOODLE_INVALID_PARAMETER',
                     'nosuchuser'                                              => 'USER_NOT_FOUND',
+                    'invalid_response'                                        => 'MOODLE_UNREACHABLE',
                     default                                                   => 'MOODLE_ERROR',
                 };
                 return response()->json([

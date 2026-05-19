@@ -28,9 +28,7 @@ class UserSearchController extends Controller
         Log::channel('single')->info('Cache ' . ($isCached ? 'HIT' : 'MISS') . ": {$cacheKey}");
 
         $entry = Cache::remember($cacheKey, self::TTL, function () use ($q) {
-            $users = $this->client->searchUsers([
-                ['key' => 'fullname', 'value' => '%' . $q . '%'],
-            ]);
+            $users = $this->client->searchUsers($q);
 
             return ['data' => $users, 'cached_at' => now()->toIso8601String()];
         });

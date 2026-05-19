@@ -52,29 +52,45 @@ class MoodleClient
     }
 
     /**
-     * Search for users using one or more key/value criteria.
+     * Search for users by name, returning up to $limit results.
      *
-     * Wraps: core_user_get_users
+     * Performs two prefix searches (firstname and lastname) and merges results
+     * so that "Guest" matches both "Guest user" (firstname match) and users whose
+     * last name starts with "Guest". Both searches use trailing-only wildcards to
+     * avoid full-table scans on the Moodle server.
      *
-     * @param  array  $criteria  Array of ['key' => ..., 'value' => ...] pairs.
-     *                           Supported keys: id, lastname, firstname, idnumber,
-     *                           username, email, auth, confirmed, profile field names.
-     *                           Values may include SQL wildcards (% and _).
-     *                           Example: [['key' => 'email', 'value' => '%@aub.edu.lb']]
-     * @return array             Flat array of user objects (same shape as getUsersByField).
+     * Valid criteria keys for core_user_get_users: id, lastname, firstname,
+     * idnumber, username, email, auth, confirmed, profile_field_*.
+     * "fullname" is NOT a valid key and will cause Moodle to return an
+     * invalidparameter exception.
+     *
+     * @param  string $name   The search string typed by the user.
+     * @param  int    $limit  Maximum number of results to return (default 50).
+     * @return array          Flat array of user objects, deduplicated by id.
      *
      * @throws MoodleApiException on Moodle application errors
      * @throws ConnectionException on network failure
      */
-    public function searchUsers(array $criteria): array
+    public function searchUsers(string $name, int $limit = 50): array
     {
-        $params = [];
-        foreach ($criteria as $i => $criterion) {
-            $params["criteria[{$i}][key]"]   = $criterion['key'];
-            $params["criteria[{$i}][value]"] = $criterion['value'];
+        $suffix = $name . '%';
+
+        $byFirst = $this->call('core_user_get_users', [
+            'criteria[0][key]'   => 'firstname',
+            'criteria[0][value]' => $suffix,
+        ])['users'] ?? [];
+
+        $byLast = $this->call('core_user_get_users', [
+            'criteria[0][key]'   => 'lastname',
+            'criteria[0][value]' => $suffix,
+        ])['users'] ?? [];
+
+        $byId = [];
+        foreach (array_merge($byFirst, $byLast) as $user) {
+            $byId[(int) $user['id']] = $user;
         }
 
-        return $this->call('core_user_get_users', $params)['users'] ?? [];
+        return array_values(array_slice($byId, 0, $limit, true));
     }
 
     /**
@@ -204,8 +220,8 @@ class MoodleClient
                 'duration_ms' => $durationMs,
             ]);
             throw new MoodleApiException(
-                errorCode: $code,
-                message:   "[{$function}] {$data['message']}",
+                moodleErrorCode: $code,
+                message:         "[{$function}] {$data['message']}",
             );
         }
 
