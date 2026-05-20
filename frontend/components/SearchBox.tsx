@@ -42,7 +42,7 @@ export default function SearchBox({ query, onChange, loading }: Props) {
         value={query}
         onChange={e => onChange(e.target.value)}
         placeholder="Search by full name (min. 2 characters)…"
-        className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-10 pr-4 text-sm shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+        className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
       />
     </div>
   );

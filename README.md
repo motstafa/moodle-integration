@@ -144,6 +144,17 @@ npm run dev
 |----------|---------|---------|
 | `NEXT_PUBLIC_API_URL` | Laravel API base URL, **including `/api` suffix** | `http://localhost:8000/api` |
 | `NEXT_PUBLIC_REFRESH_TOKEN` | Must match `REFRESH_SECRET` in the backend `.env` | `s3cr3t...` |
+| `AUTH_SECRET` | Random secret for NextAuth JWT signing — `openssl rand -base64 32` | `Jx6EUU...` |
+| `NEXTAUTH_URL` | Public URL of the Next.js app | `http://localhost:3000` |
+| `AUTH_GOOGLE_ID` | Google OAuth client ID | `12345.apps.googleusercontent.com` |
+| `AUTH_GOOGLE_SECRET` | Google OAuth client secret | `GOCSPX-...` |
+| `AUTH_MICROSOFT_ENTRA_ID_ID` | Microsoft app (client) ID | `xxxxxxxx-...` |
+| `AUTH_MICROSOFT_ENTRA_ID_SECRET` | Microsoft client secret value | `abc~...` |
+| `AUTH_MICROSOFT_ENTRA_ID_TENANT_ID` | Microsoft directory (tenant) ID | `xxxxxxxx-...` |
+
+OAuth redirect URIs to register:
+- Google: `{NEXTAUTH_URL}/api/auth/callback/google`
+- Microsoft: `{NEXTAUTH_URL}/api/auth/callback/microsoft-entra-id`
 
 ---
 
@@ -209,7 +220,7 @@ Next.js provides file-based routing (matching the three-route structure the spec
 
 ## 9. Known Limitations
 
-- **No frontend authentication**: Any user who can reach port 3000 can search Moodle users. A production deployment would add session-based auth (Moodle SSO, SAML, or Laravel Sanctum).
+- **Authentication scope**: OAuth (Google/Microsoft) protects the Next.js frontend. The Laravel API itself does not independently verify the caller's identity — it relies on network-level isolation (same-host deployment). A production deployment should also forward a signed JWT from the NextAuth session and verify it on the Laravel side.
 - **Static token**: The Moodle web service token is long-lived. Production systems need a token rotation strategy and a way to push new values to `backend/.env` without downtime.
 - **File cache not distributed**: `CACHE_STORE=file` works on a single server. Multi-instance deployments need Redis or Memcached.
 - **Avatar proxy not implemented**: `profileimageurl` values from Moodle are used directly as `<img>` `src` attributes. On Moodle instances where `pluginfile.php` requires authentication, avatars will fail to load. The fix is a `GET /api/users/{id}/avatar` proxy route (not yet implemented).
@@ -239,6 +250,7 @@ The assignment was built as an **external integration**: a Laravel backend that 
 
 ## 11. Bonus Features Implemented
 
+- **A — Google / Microsoft OAuth**: All routes are protected by NextAuth v5. Unauthenticated visitors are redirected to `/login`, which offers one-click sign-in via Google or Microsoft Entra ID. The signed-in user's avatar and name appear in the header with a Sign Out button.
 - **B — Next.js frontend**: A full React/TypeScript single-page application with three routes, debounced search (300 ms), client-side navigation with Next.js `Link`, and no full-page reloads.
 - **C — TTL cache with manual refresh**: Every endpoint caches its aggregate response with a configurable TTL (`MOODLE_CACHE_TTL`). A `CacheStatus` component on each detail page shows the data age ("Data cached 3 minutes ago") and a Refresh button that calls `POST /api/cache/flush` with the appropriate scope, then re-fetches live data.
 - **Request logging**: Every Moodle API call is logged to `storage/logs/laravel.log` with function name and duration in milliseconds. Cache HIT/MISS is logged by each controller, making it straightforward to verify during a demo that a cache flush actually triggered a fresh Moodle call.
